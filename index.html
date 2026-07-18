@@ -260,17 +260,13 @@ const menu = {
 
   ],
   "🍖 Mains": [
-    { id:6, name:"Grilled salmon", desc:"Lemon butter, seasonal veg, herb oil", price:22.00, emoji:"🐟", badges:["hot"],
-      options:[
-        { label:"Cooking style", required:true, multi:false,
-          choices:[{label:"Grilled",emoji:"🔥"},{label:"Pan-seared",emoji:"🍳"},{label:"Baked",emoji:"♨️"},{label:"Poached",emoji:"💧"}] },
-        { label:"Sauce", required:true, multi:false,
-          choices:[{label:"Lemon butter",emoji:"🍋"},{label:"Teriyaki",emoji:"🫙"},{label:"Herb cream",emoji:"🌿"},{label:"No sauce",emoji:"❌"}] },
-        { label:"Side dish", required:true, multi:false,
-          choices:[{label:"Seasonal veg",emoji:"🥦"},{label:"Mashed potato",emoji:"🥔",price:1.5},{label:"Steamed rice",emoji:"🍚"},{label:"Side salad",emoji:"🥗"}] },
-        { label:"Extras", required:false, multi:true,
-          choices:[{label:"Extra sauce",emoji:"🫙",price:0.5},{label:"Add capers",emoji:"🟢"},{label:"Add avocado",emoji:"🥑",price:2.5}] }
-      ]},
+    { id:6, name:"Sushi", desc:"Fresh rolls, choose your style", price:18.00, emoji:"🍣", badges:["hot"],
+  options:[
+    { label:"Type", required:true, multi:false,
+      choices:[{label:"Crab avocado sushi",emoji:"🥑"},{label:"Spicy crab sushi",emoji:"🦀"}] },
+    { label:"Toppings", required:false, multi:true,
+      choices:[{label:"Jalapeño",emoji:"🌶️"},{label:"Hot sriracha",emoji:"🔥"},{label:"Scallion",emoji:"🌿"}] }
+  ]},
    { id:7, name:"Fried Rice", desc:"Savory, spicy, caramelised onion", price:16.00, emoji:"🥘", badges:[],
   options:[
     { label:"Spice level", required:true, multi:false,
@@ -327,6 +323,13 @@ const menu = {
         { label:"Extras", required:false, multi:true,
           choices:[{label:"Extra chocolate Chip",emoji:"🍫",price:1},{label:"Whipped cream",emoji:"🍦"},{label:"Berries",emoji:"🫐",price:1.5}] }
       ]},
+      { id:20, name:"Banana Bread", desc:"Moist, homemade, warm from the oven", price:8.00, emoji:"🍌", badges:["new"],
+  options:[
+    { label:"Type", required:true, multi:false,
+      choices:[{label:"Chocolate chip",emoji:"🍫"},{label:"No chocolate chips",emoji:"🍞"}] },
+    { label:"Toppings", required:false, multi:true,
+      choices:[{label:"Choc chips",emoji:"🍫"},{label:"Sugar glazed",emoji:"🍯"}] }
+  ]},
     
   ]
 };
