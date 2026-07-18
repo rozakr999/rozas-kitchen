@@ -185,6 +185,7 @@
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-footer" id="cartFooter" style="display:none">
       <div class="total-row"><span>Total</span><span id="totalAmt"></span></div>
+      <input type="text" class="notes-field" placeholder="Your name" id="orderNameField" />
       <textarea class="notes-field" placeholder="Any special requests..." rows="2" id="notesField"></textarea>
       <button class="checkout-btn" onclick="placeOrder()">Place Order →</button>
     </div>
@@ -231,7 +232,8 @@
     <div class="mob-body" id="mobCartItems"></div>
     <div class="mob-footer" id="mobCartFooter" style="display:none">
       <div class="total-row"><span>Total</span><span id="mTotal"></span></div>
-      <textarea class="notes-field" placeholder="Special requests..." rows="2"></textarea>
+      <input type="text" class="notes-field" placeholder="Your name" id="mobOrderNameField" />
+      <textarea class="notes-field" placeholder="Special requests..." rows="2" id="mobNotesField"></textarea>
       <button class="checkout-btn" onclick="placeOrder()">Place Order →</button>
     </div>
   </div>
@@ -464,7 +466,7 @@ function renderModalOptions() {
           const sel = currentSelections[gi]?.has(c.label);
           const priceTag = c.price ? `<span class="opt-extra">${c.price > 0 ? '+❤️' : '-❤️'}</span>` : '';
           return `<button class="opt-btn ${sel ? 'selected' : ''}" onclick="toggleOption(${gi}, '${c.label}', ${!!group.multi})">
-            ${c.emoji} ${c.label} ${priceTag}
+            ${c.emoji || ''} ${c.label} ${priceTag}
           </button>`;
         }).join('')}
       </div>
@@ -632,20 +634,64 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// Reads whichever of the two (desktop / mobile) copies of a field has a value
+function getFieldValue(id1, id2) {
+  const v1 = document.getElementById(id1)?.value?.trim() || '';
+  const v2 = document.getElementById(id2)?.value?.trim() || '';
+  return v1 || v2;
+}
+function clearField(id) {
+  const el = document.getElementById(id);
+  if (el) el.value = '';
+}
+
 const ORDER_EMAIL = 'rozakr999@gmail.com';
+
+// Paste the Web App URL from your Google Apps Script deployment here.
+// See setup instructions — until this is filled in, orders will still
+// email you, they just won't be logged to the tracking sheet.
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVThBHR5uEvKCYJCnZwwVCrq762eYbGqIqVsQPUG2wqevqakc6TRcYzYiX7CIrVftcSA/exec';
+
+function logOrderToSheet(payload) {
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('PASTE_YOUR')) return;
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors', // Apps Script web apps don't return readable CORS responses;
+                      // fire-and-forget is fine since we don't need to read anything back.
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  }).catch(() => { /* silently ignore network errors — email still goes out */ });
+}
 
 function placeOrder() {
   if (!cart.length) return;
+
+  const name = getFieldValue('orderNameField', 'mobOrderNameField');
+  if (!name) {
+    alert('Please enter your name so we know who ordered! 💛');
+    return;
+  }
+
   const lines = cart.map(e => {
     const opts = e.summary ? ` (${e.summary})` : '';
     return `${e.qty}× ${e.item.name}${opts} — ${heartsFor(e.unitPrice)}`;
   }).join('\n');
   const totalHearts = cart.reduce((s,e) => s + heartsValue(e.unitPrice) * e.qty, 0);
-  const notes = document.getElementById('notesField')?.value || '';
+  const notes = getFieldValue('notesField', 'mobNotesField');
 
-  const subject = `New order from Roza's Kitchen — ${totalHearts} ❤️`;
+  // 1) Log to the trackable Google Sheet (fire-and-forget)
+  logOrderToSheet({
+    timestamp: new Date().toISOString(),
+    name,
+    items: lines,
+    totalHearts,
+    notes
+  });
+
+  // 2) Also send the notification email, same as before
+  const subject = `New order from Roza's Kitchen — ${name} — ${totalHearts} ❤️`;
   const bodyLines = [
-    "New order:",
+    `Order from: ${name}`,
     "",
     lines,
     "",
@@ -660,6 +706,10 @@ function placeOrder() {
 
   showToast('📧 Opening your email app...');
   cart = [];
+  clearField('orderNameField');
+  clearField('mobOrderNameField');
+  clearField('notesField');
+  clearField('mobNotesField');
   document.querySelectorAll('.item-card.in-cart').forEach(el => el.classList.remove('in-cart'));
   updateCartUI();
   closeMobCart();
