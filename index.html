@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>What's in Roza's Kitchen?</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent: #D85A30; --accent-dark: #993C1D;
+    --bg: #FAFAF8; --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.1); --text: #1A1A18;
+    --muted: #6B6B68; --light: #F4F3EF;
+    --hot-bg: #FAECE7; --hot-text: #993C1D;
+    --new-bg: #EAF3DE; --new-text: #3B6D11;
+    --veg-bg: #E1F5EE; --veg-text: #0F6E56;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HERO */
+  .hero { background: linear-gradient(135deg,#1A1008 0%,#3D2010 60%,#6B3520 100%); color:#fff; padding:3rem 2rem 2rem; text-align:center; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; inset:0; background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  .hero-inner { position:relative; z-index:1; }
+  .hero-badge { display:inline-block; background:rgba(216,90,48,0.3); border:1px solid rgba(216,90,48,0.5); color:#F0A080; font-size:12px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; padding:4px 14px; border-radius:20px; margin-bottom:1rem; }
+  .hero h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,5vw,3.2rem); font-weight:700; line-height:1.1; margin-bottom:0.5rem; }
+  .hero p { font-size:15px; color:rgba(255,255,255,0.65); margin-bottom:1.5rem; }
+  .hero-stats { display:flex; justify-content:center; gap:2rem; font-size:13px; color:rgba(255,255,255,0.5); }
+
+  /* NAV */
+  .sticky-nav { position:sticky; top:0; z-index:100; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+  .tabs { display:flex; overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { padding:1rem 1.1rem; font-size:13px; font-weight:500; cursor:pointer; border:none; background:none; color:var(--muted); border-bottom:2.5px solid transparent; white-space:nowrap; transition:color .15s,border-color .15s; font-family:'DM Sans',sans-serif; }
+  .tab:hover { color:var(--text); }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .cart-btn { display:flex; align-items:center; gap:8px; background:var(--accent); color:#fff; border:none; border-radius:30px; padding:8px 18px; font-size:14px; font-weight:500; cursor:pointer; transition:background .15s,transform .1s; font-family:'DM Sans',sans-serif; white-space:nowrap; flex-shrink:0; }
+  .cart-btn:hover { background:var(--accent-dark); transform:scale(1.02); }
+  .cart-count { background:#fff; color:var(--accent); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+
+  /* LAYOUT */
+  .main { display:flex; min-height:calc(100vh - 180px); }
+  .menu-section { flex:1; padding:1.5rem; }
+  .category-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:2px solid var(--light); }
+  .menu-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; margin-bottom:2.5rem; }
+  .category-page { display:none; }
+  .category-page.active { display:block; }
+
+  /* ITEM CARD */
+  .item-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; transition:box-shadow .2s,transform .2s,border-color .2s; cursor:pointer; }
+  .item-card:hover { box-shadow:0 6px 24px rgba(0,0,0,0.09); transform:translateY(-2px); }
+  .item-card.in-cart { border-color:var(--accent); box-shadow:0 0 0 2px rgba(216,90,48,0.15); }
+  .item-thumb { background:var(--light); font-size:44px; text-align:center; padding:1.5rem 1rem 1rem; position:relative; }
+  .item-badges { position:absolute; top:8px; left:8px; display:flex; flex-direction:column; gap:3px; }
+  .badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; }
+  .badge-hot { background:var(--hot-bg); color:var(--hot-text); }
+  .badge-new { background:var(--new-bg); color:var(--new-text); }
+  .badge-veg { background:var(--veg-bg); color:var(--veg-text); }
+  .item-body { padding:0.9rem; }
+  .item-name { font-size:14px; font-weight:500; margin-bottom:3px; }
+  .item-desc { font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.45; }
+  .item-footer { display:flex; justify-content:space-between; align-items:center; }
+  .item-price { font-size:15px; font-weight:600; color:var(--accent); }
+  .customize-hint { font-size:11px; color:var(--muted); display:flex; align-items:center; gap:3px; }
+
+  /* CART SIDEBAR */
+  .cart-sidebar { width:320px; flex-shrink:0; background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; position:sticky; top:57px; height:calc(100vh - 57px); overflow-y:auto; }
+  .cart-sidebar.hidden { display:none; }
+  .cart-header { padding:1.25rem 1.25rem 1rem; border-bottom:1px solid var(--border); }
+  .cart-header h2 { font-family:'Playfair Display',serif; font-size:20px; font-weight:600; }
+  .cart-header p { font-size:12px; color:var(--muted); margin-top:2px; }
+  .cart-items { flex:1; padding:1rem 1.25rem; }
+  .empty-cart { text-align:center; padding:2.5rem 1rem; color:var(--muted); }
+  .empty-cart .empty-icon { font-size:40px; margin-bottom:0.75rem; }
+  .empty-cart p { font-size:14px; }
+  .cart-entry { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); animation:fadeIn .2s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+  .cart-emoji { font-size:22px; flex-shrink:0; padding-top:2px; }
+  .cart-info { flex:1; min-width:0; }
+  .cart-name { font-size:13px; font-weight:500; }
+  .cart-sub { font-size:11px; color:var(--muted); margin-top:1px; line-height:1.4; }
+  .cart-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .cart-price { font-size:14px; font-weight:600; color:var(--accent); }
+  .remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; transition:color .12s; padding:0; }
+  .remove-btn:hover { color:#E24B4A; }
+  .cart-footer { padding:1.25rem; border-top:1px solid var(--border); background:var(--surface); }
+  .subtotal-row,.tax-row { display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  .total-row { display:flex; justify-content:space-between; font-size:16px; font-weight:600; margin:10px 0 14px; padding-top:10px; border-top:1px solid var(--border); }
+  .total-row span:last-child { color:var(--accent); }
+  .notes-field { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:10px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--light); resize:none; margin-bottom:12px; outline:none; transition:border-color .15s; }
+  .notes-field:focus { border-color:var(--accent); }
+  .checkout-btn { width:100%; padding:13px; background:var(--accent); color:#fff; border:none; border-radius:30px; font-size:15px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .15s,transform .1s; }
+  .checkout-btn:hover { background:var(--accent-dark); transform:scale(1.01); }
+
+  /* MOBILE */
+  .mobile-cart-bar { display:none; position:fixed; bottom:0; left:0; right:0; background:var(--accent); color:#fff; padding:1rem 1.5rem; font-size:15px; font-weight:600; cursor:pointer; z-index:200; justify-content:space-between; align-items:center; border:none; width:100%; font-family:'DM Sans',sans-serif; }
+
+  /* CUSTOMIZE MODAL */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:400; align-items:center; justify-content:center; padding:1rem; }
+  .overlay.open { display:flex; }
+  .modal { background:var(--surface); border-radius:20px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+  .modal-hero { background:var(--light); text-align:center; padding:2rem 1.5rem 1.5rem; border-radius:20px 20px 0 0; position:relative; }
+  .modal-hero .big-emoji { font-size:64px; display:block; margin-bottom:0.5rem; }
+  .modal-hero h2 { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; }
+  .modal-hero p { font-size:13px; color:var(--muted); margin-top:4px; }
+  .modal-close-btn { position:absolute; top:12px; right:14px; background:rgba(0,0,0,0.07); border:none; border-radius:50%; width:30px; height:30px; font-size:18px; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; }
+  .modal-body { padding:1.25rem 1.5rem; }
+
+  /* OPTION GROUPS */
+  .option-group { margin-bottom:1.5rem; }
+  .option-group-title { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .option-group-title span { background:var(--accent); color:#fff; font-size:9px; padding:2px 7px; border-radius:10px; letter-spacing:0; text-transform:none; }
+  .options-grid { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt-btn { padding:8px 16px; border:1.5px solid var(--border); border-radius:30px; font-size:13px; font-weight:500; cursor:pointer; background:var(--surface); color:var(--text); transition:all .15s; font-family:'DM Sans',sans-serif; display:flex; align-items:center; gap:5px; }
+  .opt-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .opt-btn.selected { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .opt-btn .opt-extra { font-size:11px; opacity:0.8; }
+
+  /* QUANTITY ROW */
+  .qty-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
+  .qty-row label { font-size:14px; font-weight:500; }
+  .qty-ctrl { display:flex; align-items:center; gap:10px; }
+  .qty-btn { width:32px; height:32px; border-radius:50%; border:1.5px solid var(--border); background:var(--light); cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; color:var(--text); transition:all .12s; font-family:'DM Sans',sans-serif; }
+  .qty-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .qty-num { font-size:16px; font-weight:600; min-width:24px; text-align:center; }
+
+  /* ADD TO CART BTN IN MODAL */
+  .modal-footer { padding:0 1.5rem 1.5rem; }
+  .add-to-cart-btn { width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:30px; font-size:15px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .15s,transform .1s; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .add-to-cart-btn:hover { background:var(--accent-dark); transform:scale(1.01); }
+
+  /* MOBILE CART MODAL */
+  .mob-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:300; align-items:flex-end; }
+  .mob-overlay.open { display:flex; }
+  .mob-box { background:var(--surface); width:100%; max-height:85vh; border-radius:20px 20px 0 0; display:flex; flex-direction:column; overflow:hidden; }
+  .mob-header { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .mob-header h2 { font-family:'Playfair Display',serif; font-size:18px; }
+  .mob-close { background:none; border:none; font-size:22px; cursor:pointer; color:var(--muted); }
+  .mob-body { overflow-y:auto; padding:1rem 1.25rem; flex:1; }
+  .mob-footer { padding:1rem 1.25rem; border-top:1px solid var(--border); }
+
+  /* TOAST */
+  .toast { position:fixed; top:80px; right:1.5rem; background:#1A1A18; color:#fff; padding:10px 18px; border-radius:30px; font-size:13px; font-weight:500; z-index:999; transform:translateY(-10px); opacity:0; transition:opacity .3s,transform .3s; pointer-events:none; }
+  .toast.show { opacity:1; transform:translateY(0); }
+
+  @media(max-width:700px) {
+    .cart-sidebar { display:none !important; }
+    .mobile-cart-bar { display:flex; }
+    .main { padding-bottom:70px; }
+    .menu-grid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+    .sticky-nav { padding:0 0.75rem; }
+    .menu-section { padding:1rem 0.75rem; }
+    .overlay { align-items:flex-end; padding:0; }
+    .modal { border-radius:20px 20px 0 0; max-height:92vh; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Open Now</div>
+    <h1>Roza's Kitchen</h1>
+    <p> Fresh ingredients, crafted with care and Love ❤️</p>
+    <div class="hero-stats">
+      <span>🕐 25–35 min delivery</span>
+      <span>⭐ 5.0 rating</span>
+      <span>🚚 Free over ❤️❤️❤️ </span>
+    </div>
+  </div>
+</div>
+
+<nav class="sticky-nav">
+  <div class="tabs" id="tabs"></div>
+  <button class="cart-btn" onclick="toggleSidebar()">🛒 Cart <span class="cart-count" id="cartCount">0</span></button>
+</nav>
+
+<div class="main">
+  <div class="menu-section" id="menuSection"></div>
+  <aside class="cart-sidebar hidden" id="cartSidebar">
+    <div class="cart-header">
+      <h2>Your order</h2>
+      <p id="cartSubLabel">Add items to get started</p>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-footer" id="cartFooter" style="display:none">
+      <div class="total-row"><span>Total</span><span id="totalAmt"></span></div>
+      <textarea class="notes-field" placeholder="Any special requests..." rows="2" id="notesField"></textarea>
+      <button class="checkout-btn" onclick="placeOrder()">Place Order →</button>
+    </div>
+  </aside>
+</div>
+
+<button class="mobile-cart-bar" id="mobileCartBar" onclick="openMobCart()">
+  <span>View Cart</span><span id="mobileTotal">0 ❤️</span>
+</button>
+
+<!-- CUSTOMIZE MODAL -->
+<div class="overlay" id="customizeOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="customizeModal">
+    <div class="modal-hero">
+      <button class="modal-close-btn" onclick="closeCustomize()">×</button>
+      <span class="big-emoji" id="modalEmoji">🐟</span>
+      <h2 id="modalName">Grilled Salmon</h2>
+      <p id="modalDesc">Lemon butter, seasonal veg, herb oil</p>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <div class="qty-row">
+        <label>Quantity</label>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeModalQty(-1)">−</button>
+          <span class="qty-num" id="modalQty">1</span>
+          <button class="qty-btn" onclick="changeModalQty(1)">+</button>
+        </div>
+      </div>
+      <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCart()">
+        Add to order — <span id="modalTotal">1 ❤️</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE CART MODAL -->
+<div class="mob-overlay" id="mobCartOverlay">
+  <div class="mob-box">
+    <div class="mob-header">
+      <h2>Your Order</h2>
+      <button class="mob-close" onclick="closeMobCart()">×</button>
+    </div>
+    <div class="mob-body" id="mobCartItems"></div>
+    <div class="mob-footer" id="mobCartFooter" style="display:none">
+      <div class="total-row"><span>Total</span><span id="mTotal"></span></div>
+      <textarea class="notes-field" placeholder="Special requests..." rows="2"></textarea>
+      <button class="checkout-btn" onclick="placeOrder()">Place Order →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── MENU DATA ───────────────────────────────────────────────────────────────
+// Each item can have `options`: array of option groups
+// Each group: { label, required, multi, choices: [{label, emoji, price}] }
+const menu = {
+  "🍽️ Starters": [
+
+    { id:1, name:"Chicken wings", desc:"Crispy, honey-sriracha glaze, ranch dip", price:11.00, emoji:"🍗", badges:["hot"],
+      options:[
+        { label:"Sauce", required:true, multi:false,
+          choices:[{label:"Honey sriracha",emoji:"🍯"},{label:"BBQ",emoji:"🔥"},{label:"Buffalo",emoji:"🌶️"},{label:"Garlic parmesan",emoji:"🧄",price:1}] },
+        { label:"Spice level", required:true, multi:false,
+          choices:[{label:"Mild",emoji:"😊"},{label:"Medium",emoji:"🌶️"},{label:"Hot",emoji:"🔥"},{label:"Extra hot",emoji:"💀"}] },
+        { label:"Dipping sauce", required:false, multi:false,
+          choices:[{label:"Ranch",emoji:"🥛"},{label:"Blue cheese",emoji:"🫙"},{label:"Honey mustard",emoji:"🍯"}] }
+      ]}, 
+
+  ],
+  "🍖 Mains": [
+    { id:6, name:"Grilled salmon", desc:"Lemon butter, seasonal veg, herb oil", price:22.00, emoji:"🐟", badges:["hot"],
+      options:[
+        { label:"Cooking style", required:true, multi:false,
+          choices:[{label:"Grilled",emoji:"🔥"},{label:"Pan-seared",emoji:"🍳"},{label:"Baked",emoji:"♨️"},{label:"Poached",emoji:"💧"}] },
+        { label:"Sauce", required:true, multi:false,
+          choices:[{label:"Lemon butter",emoji:"🍋"},{label:"Teriyaki",emoji:"🫙"},{label:"Herb cream",emoji:"🌿"},{label:"No sauce",emoji:"❌"}] },
+        { label:"Side dish", required:true, multi:false,
+          choices:[{label:"Seasonal veg",emoji:"🥦"},{label:"Mashed potato",emoji:"🥔",price:1.5},{label:"Steamed rice",emoji:"🍚"},{label:"Side salad",emoji:"🥗"}] },
+        { label:"Extras", required:false, multi:true,
+          choices:[{label:"Extra sauce",emoji:"🫙",price:0.5},{label:"Add capers",emoji:"🟢"},{label:"Add avocado",emoji:"🥑",price:2.5}] }
+      ]},
+   { id:7, name:"Fried Rice", desc:"Savory, spicy, caramelised onion", price:16.00, emoji:"🥘", badges:[],
+  options:[
+    { label:"Spice level", required:true, multi:false,
+      choices:[{label:"Mild",emoji:"🩸"},{label:"Spicy",emoji:"🥩"},{label:"Extra Spicy",emoji:"🔥"}] },
+    { label:"Type", required:true, multi:false,
+      choices:[{label:"Chicken",emoji:"🍗"},{label:"Egg",emoji:"🥚"},{label:"Both",emoji:"👨‍🍳",price:-1}] },
+    { label:"Toppings", required:false, multi:true,
+      choices:[{label:"Scallion",emoji:"🌿"},{label:"Fried egg",emoji:"🍳"},{label:"Jalapeños",emoji:"🌶️"},{label:"Sesame seeds",emoji:"⚪"},{label:"Chilli oil",emoji:"🌶️"}] },
+    { label:"Sauce", required:false, multi:false,
+      choices:[{label:"Classic mayo",emoji:"🥛"},{label:"Kewpie",emoji:"🫙"},{label:"Sriracha",emoji:"🔥"},{label:"Mustard",emoji:"🟡"}] }
+  ]},
+   
+  ],
+  "🥗 Sides": [
+   
+    { id:12, name:"Side salad", desc:"Mixed greens, cherry tomato, vinaigrette", price:6.00, emoji:"🥗", badges:["veg"],
+      options:[
+        { label:"Dressing", required:true, multi:false,
+          choices:[{label:"Vinaigrette",emoji:"🫙"},{label:"Caesar",emoji:"🧄"},{label:"Ranch",emoji:"🥛"},{label:"Lemon olive oil",emoji:"🍋"}] },
+        { label:"Add-ons", required:false, multi:true,
+          choices:[{label:"Grilled halloumi",emoji:"🧀",price:3},{label:"Croutons",emoji:"🍞",price:0.5},{label:"Boiled egg",emoji:"🥚",price:1}] }
+      ]},
+    
+  ],
+  "🥤 Drinks": [
+    { id:15, name:"Fresh lemonade", desc:"Squeezed to order, mint, honey", price:4.50, emoji:"🍋", badges:["new","veg"],
+      options:[
+        { label:"Style", required:true, multi:false,
+          choices:[{label:"Classic",emoji:"🍋"},{label:"Sparkling",emoji:"💧"},{label:"Strawberry",emoji:"🍓",price:0.5},{label:"Mint",emoji:"🌿"}] },
+        { label:"Sweetness", required:false, multi:false,
+          choices:[{label:"Less sweet",emoji:"⬇️"},{label:"Regular",emoji:"✅"},{label:"Extra sweet",emoji:"⬆️"}] }
+      ]},
+    { id:16, name:"Iced coffee", desc:"Cold brew, your choice of milk", price:5.00, emoji:"☕", badges:[],
+      options:[
+        { label:"Coffee base", required:true, multi:false,
+          choices:[{label:"Cold brew",emoji:"☕"},{label:"Espresso",emoji:"☕"},{label:"Double shot",emoji:"⚡",price:1}] },
+        { label:"Milk", required:true, multi:false,
+          choices:[{label:"Full cream",emoji:"🥛"},{label:"Skim",emoji:"🥛"},{label:"Oat",emoji:"🌾",price:0.5},{label:"Almond",emoji:"🌰",price:0.5},{label:"Soy",emoji:"🫘",price:0.5}] },
+        { label:"Flavour shot", required:false, multi:false,
+          choices:[{label:"None",emoji:"❌"},{label:"Vanilla",emoji:"🍦",price:0.5},{label:"Caramel",emoji:"🍮",price:0.5},{label:"Hazelnut",emoji:"🌰",price:0.5}] }
+      ]},
+   
+    { id:18, name:"Water", desc:"Glass of Water", price:3.00, emoji:"💧", badges:["veg"],
+      options:[
+        { label:"Type", required:true, multi:false,
+          choices:[{label:"Filter Water",emoji:"💧"},{label:"Still",emoji:"🫗"}] }
+      ]}
+  ],
+  "🍰 Desserts": [
+    { id:19, name:"Bluberry Muffin", desc:"Soft and fruity", price:9.00, emoji:"🧁", badges:["hot"],
+      options:[
+        { label:"amount", required:true, multi:false,
+          choices:[{label:"1"},{label:"2"},{label:"3"}] },
+        { label:"Extras", required:false, multi:true,
+          choices:[{label:"Extra chocolate Chip",emoji:"🍫",price:1},{label:"Whipped cream",emoji:"🍦"},{label:"Berries",emoji:"🫐",price:1.5}] }
+      ]},
+    
+  ]
+};
+
+// ─── HEARTS PRICING ─────────────────────────────────────────────────────────
+// No real money here — every item is worth 1, 2, or 3 hearts based on its
+// underlying price tier. Add-on price differences just show a tiny +/- heart.
+function heartsValue(price) {
+  if (price < 8) return 1;
+  if (price < 15) return 2;
+  return 3;
+}
+function heartsFor(price) {
+  return '❤️'.repeat(heartsValue(price));
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let cart = [];
+let cartIdCounter = 0;
+let sidebarOpen = false;
+const categories = Object.keys(menu);
+let currentCategory = categories[0];
+const badgeLabel = { hot:"🔥 Popular", new:"✨ New", veg:"🌿 Veg" };
+const badgeClass  = { hot:"badge-hot", new:"badge-new", veg:"badge-veg" };
+
+// Current item being customized
+let currentItem = null;
+let currentSelections = {}; // groupIndex -> Set of choice labels
+let modalQty = 1;
+
+// ─── FIND ITEM ────────────────────────────────────────────────────────────────
+function findItem(id) {
+  for (const items of Object.values(menu)) {
+    const f = items.find(i => i.id === +id);
+    if (f) return f;
+  }
+}
+
+// ─── RENDER TABS ─────────────────────────────────────────────────────────────
+function renderTabs() {
+  document.getElementById('tabs').innerHTML = categories.map(cat =>
+    `<button class="tab" onclick="showCategory('${cat}')">${cat.split(' ').slice(1).join(' ')}</button>`
+  ).join('');
+  document.querySelectorAll('.tab')[0]?.classList.add('active');
+}
+
+// Switch which category page is visible (separate pages, not scroll)
+function showCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.category-page').forEach(el => {
+    el.classList.toggle('active', el.id === 'cat-' + cat);
+  });
+  const tabButtons = document.querySelectorAll('.tab');
+  const idx = categories.indexOf(cat);
+  tabButtons.forEach((t, i) => t.classList.toggle('active', i === idx));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── RENDER MENU ─────────────────────────────────────────────────────────────
+function renderMenu() {
+  document.getElementById('menuSection').innerHTML = categories.map((cat, i) => {
+    const items = menu[cat];
+    return `<div id="cat-${cat}" class="category-page ${i === 0 ? 'active' : ''}">
+      <div class="category-title">${cat}</div>
+      <div class="menu-grid">${items.map(renderCard).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCard(item) {
+  const inCart = cart.some(e => e.itemId === item.id);
+  const badgesHtml = item.badges.map(b => `<span class="badge ${badgeClass[b]}">${badgeLabel[b]}</span>`).join('');
+  return `<div class="item-card ${inCart ? 'in-cart' : ''}" id="card-${item.id}" onclick="openCustomize(${item.id})">
+    <div class="item-thumb">${item.emoji}<div class="item-badges">${badgesHtml}</div></div>
+    <div class="item-body">
+      <div class="item-name">${item.name}</div>
+      <div class="item-desc">${item.desc}</div>
+      <div class="item-footer">
+        <span class="item-price">${heartsFor(item.price)}</span>
+        <span class="customize-hint">✏️ Customize</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── CUSTOMIZE MODAL ─────────────────────────────────────────────────────────
+function openCustomize(id) {
+  currentItem = findItem(id);
+  currentSelections = {};
+  modalQty = 1;
+
+  // Pre-select first required option in each group
+  if (currentItem.options) {
+    currentItem.options.forEach((group, gi) => {
+      if (group.required && !group.multi) {
+        currentSelections[gi] = new Set([group.choices[0].label]);
+      } else {
+        currentSelections[gi] = new Set();
+      }
+    });
+  }
+
+  document.getElementById('modalEmoji').textContent = currentItem.emoji;
+  document.getElementById('modalName').textContent  = currentItem.name;
+  document.getElementById('modalDesc').textContent  = currentItem.desc;
+  document.getElementById('modalQty').textContent   = modalQty;
+
+  renderModalOptions();
+  updateModalTotal();
+  document.getElementById('customizeOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCustomize() {
+  document.getElementById('customizeOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('customizeOverlay')) closeCustomize();
+}
+
+function renderModalOptions() {
+  if (!currentItem.options || currentItem.options.length === 0) {
+    document.getElementById('modalBody').innerHTML = '<p style="color:var(--muted);font-size:14px;padding-bottom:1rem">No customization needed for this item.</p>';
+    return;
+  }
+  document.getElementById('modalBody').innerHTML = currentItem.options.map((group, gi) => `
+    <div class="option-group">
+      <div class="option-group-title">
+        ${group.label}
+        ${group.required ? '<span>Required</span>' : ''}
+        ${group.multi ? '<span style="background:#3B6D11">Pick many</span>' : ''}
+      </div>
+      <div class="options-grid">
+        ${group.choices.map(c => {
+          const sel = currentSelections[gi]?.has(c.label);
+          const priceTag = c.price ? `<span class="opt-extra">${c.price > 0 ? '+❤️' : '-❤️'}</span>` : '';
+          return `<button class="opt-btn ${sel ? 'selected' : ''}" onclick="toggleOption(${gi}, '${c.label}', ${!!group.multi})">
+            ${c.emoji} ${c.label} ${priceTag}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function toggleOption(gi, label, multi) {
+  if (!currentSelections[gi]) currentSelections[gi] = new Set();
+  const group = currentItem.options[gi];
+  if (multi) {
+    if (currentSelections[gi].has(label)) currentSelections[gi].delete(label);
+    else currentSelections[gi].add(label);
+  } else {
+    currentSelections[gi] = new Set([label]);
+  }
+  renderModalOptions();
+  updateModalTotal();
+}
+
+function changeModalQty(delta) {
+  modalQty = Math.max(1, modalQty + delta);
+  document.getElementById('modalQty').textContent = modalQty;
+  updateModalTotal();
+}
+
+function calcItemPrice(item, selections) {
+  let price = item.price;
+  if (!item.options) return price;
+  item.options.forEach((group, gi) => {
+    const picked = selections[gi] || new Set();
+    group.choices.forEach(c => {
+      if (picked.has(c.label) && c.price) price += c.price;
+    });
+  });
+  return price;
+}
+
+function updateModalTotal() {
+  const unitPrice = calcItemPrice(currentItem, currentSelections);
+  const totalHearts = heartsValue(unitPrice) * modalQty;
+  document.getElementById('modalTotal').textContent = `${totalHearts} ❤️`;
+}
+
+function getSelectionSummary(item, selections) {
+  if (!item.options) return '';
+  const parts = [];
+  item.options.forEach((group, gi) => {
+    const picked = selections[gi] || new Set();
+    if (picked.size > 0) parts.push([...picked].join(', '));
+  });
+  return parts.join(' · ');
+}
+
+function addToCart() {
+  // Validate required groups
+  if (currentItem.options) {
+    for (let gi = 0; gi < currentItem.options.length; gi++) {
+      const group = currentItem.options[gi];
+      if (group.required && (!currentSelections[gi] || currentSelections[gi].size === 0)) {
+        alert(`Please choose a ${group.label.toLowerCase()} option.`);
+        return;
+      }
+    }
+  }
+  const unitPrice = calcItemPrice(currentItem, currentSelections);
+  const summary = getSelectionSummary(currentItem, currentSelections);
+  // Deep copy selections
+  const selCopy = {};
+  Object.keys(currentSelections).forEach(k => { selCopy[k] = new Set(currentSelections[k]); });
+
+  cart.push({
+    cartId: ++cartIdCounter,
+    itemId: currentItem.id,
+    item: currentItem,
+    qty: modalQty,
+    unitPrice,
+    selections: selCopy,
+    summary
+  });
+
+  closeCustomize();
+  updateCartUI();
+  showToast(`${currentItem.emoji} ${currentItem.name} added!`);
+
+  // Highlight card
+  const card = document.getElementById('card-' + currentItem.id);
+  if (card) card.classList.add('in-cart');
+}
+
+function removeFromCart(cartId) {
+  const idx = cart.findIndex(e => e.cartId === cartId);
+  if (idx > -1) {
+    const itemId = cart[idx].itemId;
+    cart.splice(idx, 1);
+    // Remove in-cart highlight if no more entries for this item
+    if (!cart.some(e => e.itemId === itemId)) {
+      document.getElementById('card-' + itemId)?.classList.remove('in-cart');
+    }
+    updateCartUI();
+  }
+}
+
+// ─── CART UI ─────────────────────────────────────────────────────────────────
+function updateCartUI() {
+  const totalQty = cart.reduce((s, e) => s + e.qty, 0);
+  const totalHearts = cart.reduce((s, e) => s + heartsValue(e.unitPrice) * e.qty, 0);
+
+  document.getElementById('cartCount').textContent     = totalQty;
+  document.getElementById('mobileTotal').textContent   = `${totalHearts} ❤️`;
+
+  renderSidebarCart(totalHearts);
+  renderMobCart(totalHearts);
+}
+
+function cartEntriesHTML() {
+  if (cart.length === 0) return `<div class="empty-cart"><div class="empty-icon">🛒</div><p>Your cart is empty</p><p style="font-size:12px;margin-top:4px">Click any item to customize &amp; add!</p></div>`;
+  return cart.map(e => `
+    <div class="cart-entry">
+      <div class="cart-emoji">${e.item.emoji}</div>
+      <div class="cart-info">
+        <div class="cart-name">${e.item.name} ×${e.qty}</div>
+        ${e.summary ? `<div class="cart-sub">${e.summary}</div>` : ''}
+      </div>
+      <div class="cart-right">
+        <span class="cart-price">${heartsFor(e.unitPrice)}</span>
+        <button class="remove-btn" onclick="removeFromCart(${e.cartId})">×</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderSidebarCart(totalHearts) {
+  const itemsEl  = document.getElementById('cartItems');
+  const footerEl = document.getElementById('cartFooter');
+  const subLabel = document.getElementById('cartSubLabel');
+
+  itemsEl.innerHTML = cartEntriesHTML();
+  subLabel.textContent = cart.length ? `${cart.reduce((s,e)=>s+e.qty,0)} item(s) selected` : 'Add items to get started';
+
+  if (cart.length === 0) { footerEl.style.display = 'none'; return; }
+  document.getElementById('totalAmt').textContent = `${totalHearts} ❤️`;
+  footerEl.style.display = 'block';
+}
+
+function renderMobCart(totalHearts) {
+  const itemsEl  = document.getElementById('mobCartItems');
+  const footerEl = document.getElementById('mobCartFooter');
+  itemsEl.innerHTML = cartEntriesHTML();
+  if (cart.length === 0) { footerEl.style.display = 'none'; return; }
+  document.getElementById('mTotal').textContent = `${totalHearts} ❤️`;
+  footerEl.style.display = 'block';
+}
+
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('cartSidebar').classList.toggle('hidden', !sidebarOpen);
+}
+
+function openMobCart()  { document.getElementById('mobCartOverlay').classList.add('open'); }
+function closeMobCart() { document.getElementById('mobCartOverlay').classList.remove('open'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+const ORDER_EMAIL = 'rozakr999@gmail.com';
+
+function placeOrder() {
+  if (!cart.length) return;
+  const lines = cart.map(e => {
+    const opts = e.summary ? ` (${e.summary})` : '';
+    return `${e.qty}× ${e.item.name}${opts} — ${heartsFor(e.unitPrice)}`;
+  }).join('\n');
+  const totalHearts = cart.reduce((s,e) => s + heartsValue(e.unitPrice) * e.qty, 0);
+  const notes = document.getElementById('notesField')?.value || '';
+
+  const subject = `New order from Roza's Kitchen — ${totalHearts} ❤️`;
+  const bodyLines = [
+    "New order:",
+    "",
+    lines,
+    "",
+    notes ? `Notes: ${notes}` : '',
+    "",
+    `Total: ${totalHearts} ❤️`
+  ].filter(Boolean);
+  const body = bodyLines.join('\n');
+
+  const mailtoLink = `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailtoLink;
+
+  showToast('📧 Opening your email app...');
+  cart = [];
+  document.querySelectorAll('.item-card.in-cart').forEach(el => el.classList.remove('in-cart'));
+  updateCartUI();
+  closeMobCart();
+}
+
+renderTabs();
+renderMenu();
+updateCartUI();
+</script>
+</body>
+</html>
